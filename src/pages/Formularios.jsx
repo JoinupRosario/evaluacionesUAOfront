@@ -144,8 +144,8 @@ function Formularios() {
                   </span>
                 </div>
                 
-                {/* Mostrar los 3 formularios */}
-                <div className="grid grid-cols-3 gap-2">
+                {/* Mostrar los 2 formularios */}
+                <div className="grid grid-cols-2 gap-2">
                   <div className="bg-red-50 border border-red-200 rounded p-2 text-center">
                     <div className="w-6 h-6 bg-red-800 rounded-full flex items-center justify-center mx-auto mb-1">
                       <span className="text-white text-xs font-bold">E</span>
@@ -159,13 +159,6 @@ function Formularios() {
                     </div>
                     <p className="text-xs text-gray-700 font-medium">Tutor</p>
                     <p className="text-xs text-gray-500">{survey.tutor_questions || 0} preguntas</p>
-                  </div>
-                  <div className="bg-purple-50 border border-purple-200 rounded p-2 text-center">
-                    <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-1">
-                      <span className="text-white text-xs font-bold">M</span>
-                    </div>
-                    <p className="text-xs text-gray-700 font-medium">Monitor</p>
-                    <p className="text-xs text-gray-500">{survey.monitor_questions || 0} preguntas</p>
                   </div>
                 </div>
               </div>

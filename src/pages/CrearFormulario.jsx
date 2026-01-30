@@ -24,10 +24,9 @@ function CrearFormulario() {
   // Preguntas separadas para cada formulario
   const [studentQuestions, setStudentQuestions] = useState([])
   const [tutorQuestions, setTutorQuestions] = useState([])
-  const [monitorQuestions, setMonitorQuestions] = useState([])
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(isEditing) // Para cargar datos al editar
-  const [activeTab, setActiveTab] = useState('student') // 'student', 'tutor', 'monitor'
+  const [activeTab, setActiveTab] = useState('student') // 'student', 'tutor'
   const [alert, setAlert] = useState({ isOpen: false, title: '', message: '', type: 'success', details: null })
 
   // Cargar datos si está editando
@@ -50,7 +49,6 @@ function CrearFormulario() {
 
       setStudentQuestions(survey.student_form?.questions || [])
       setTutorQuestions(survey.tutor_form?.questions || [])
-      setMonitorQuestions(survey.monitor_form?.questions || [])
     } catch (error) {
       console.error('Error al cargar formulario:', error)
       setAlert({
@@ -84,9 +82,6 @@ function CrearFormulario() {
     } else if (formType === 'tutor') {
       newQuestion.order = tutorQuestions.length + 1
       setTutorQuestions([...tutorQuestions, newQuestion])
-    } else if (formType === 'monitor') {
-      newQuestion.order = monitorQuestions.length + 1
-      setMonitorQuestions([...monitorQuestions, newQuestion])
     }
   }
 
@@ -100,10 +95,6 @@ function CrearFormulario() {
       const updated = [...tutorQuestions]
       updated[index] = { ...updated[index], [field]: value }
       setTutorQuestions(updated)
-    } else if (formType === 'monitor') {
-      const updated = [...monitorQuestions]
-      updated[index] = { ...updated[index], [field]: value }
-      setMonitorQuestions(updated)
     }
   }
 
@@ -122,13 +113,6 @@ function CrearFormulario() {
       }
       updated[questionIndex].options[optionIndex] = { label: value, value: value }
       setTutorQuestions(updated)
-    } else if (formType === 'monitor') {
-      const updated = [...monitorQuestions]
-      if (!updated[questionIndex].options) {
-        updated[questionIndex].options = []
-      }
-      updated[questionIndex].options[optionIndex] = { label: value, value: value }
-      setMonitorQuestions(updated)
     }
   }
 
@@ -147,13 +131,6 @@ function CrearFormulario() {
       }
       updated[questionIndex].options.push({ label: '', value: '' })
       setTutorQuestions(updated)
-    } else if (formType === 'monitor') {
-      const updated = [...monitorQuestions]
-      if (!updated[questionIndex].options) {
-        updated[questionIndex].options = []
-      }
-      updated[questionIndex].options.push({ label: '', value: '' })
-      setMonitorQuestions(updated)
     }
   }
 
@@ -166,10 +143,6 @@ function CrearFormulario() {
       const updated = [...tutorQuestions]
       updated[questionIndex].options.splice(optionIndex, 1)
       setTutorQuestions(updated)
-    } else if (formType === 'monitor') {
-      const updated = [...monitorQuestions]
-      updated[questionIndex].options.splice(optionIndex, 1)
-      setMonitorQuestions(updated)
     }
   }
 
@@ -182,10 +155,6 @@ function CrearFormulario() {
       const updated = tutorQuestions.filter((_, i) => i !== index)
       updated.forEach((q, i) => { q.order = i + 1 })
       setTutorQuestions(updated)
-    } else if (formType === 'monitor') {
-      const updated = monitorQuestions.filter((_, i) => i !== index)
-      updated.forEach((q, i) => { q.order = i + 1 })
-      setMonitorQuestions(updated)
     }
   }
 
@@ -198,8 +167,7 @@ function CrearFormulario() {
       questions = tutorQuestions
       setQuestions = setTutorQuestions
     } else {
-      questions = monitorQuestions
-      setQuestions = setMonitorQuestions
+      return // No hay más tipos
     }
 
     if (
@@ -231,7 +199,7 @@ function CrearFormulario() {
     }
 
     // Validar que al menos un formulario tenga preguntas
-    if (studentQuestions.length === 0 && tutorQuestions.length === 0 && monitorQuestions.length === 0) {
+    if (studentQuestions.length === 0 && tutorQuestions.length === 0) {
       setAlert({
         isOpen: true,
         title: 'Preguntas requeridas',
@@ -242,7 +210,7 @@ function CrearFormulario() {
     }
 
     // Validar que todas las preguntas tengan texto
-    const allQuestions = [...studentQuestions, ...tutorQuestions, ...monitorQuestions]
+    const allQuestions = [...studentQuestions, ...tutorQuestions]
     const invalidQuestions = allQuestions.filter(q => !q.question.trim())
     if (invalidQuestions.length > 0) {
       setAlert({
@@ -294,23 +262,6 @@ function CrearFormulario() {
             question.scale_labels = q.scale_labels
           }
           return question
-        }),
-        monitor_questions: monitorQuestions.map(q => {
-          const question = {
-            type: q.type,
-            question: q.question,
-            required: q.required,
-            order: q.order
-          }
-          if (q.type === 'multiple_choice' || q.type === 'checkbox') {
-            question.options = q.options.filter(opt => opt.label.trim())
-          }
-          if (q.type === 'scale') {
-            question.scale_min = q.scale_min
-            question.scale_max = q.scale_max
-            question.scale_labels = q.scale_labels
-          }
-          return question
         })
       }
 
@@ -320,14 +271,13 @@ function CrearFormulario() {
         
         const details = [
           `Estudiante (${studentQuestions.length} preguntas)`,
-          `Tutor (${tutorQuestions.length} preguntas)`,
-          `Monitor (${monitorQuestions.length} preguntas)`
+          `Tutor (${tutorQuestions.length} preguntas)`
         ]
 
         setAlert({
           isOpen: true,
           title: 'Formulario actualizado exitosamente',
-          message: 'Se han actualizado los 3 formularios independientes:',
+          message: 'Se han actualizado los 2 formularios independientes:',
           type: 'success',
           details: details
         })
@@ -342,14 +292,13 @@ function CrearFormulario() {
         
         const details = [
           `Estudiante (${studentQuestions.length} preguntas)`,
-          `Tutor (${tutorQuestions.length} preguntas)`,
-          `Monitor (${monitorQuestions.length} preguntas)`
+          `Tutor (${tutorQuestions.length} preguntas)`
         ]
 
         setAlert({
           isOpen: true,
           title: 'Formulario creado exitosamente',
-          message: 'Se han creado 3 formularios independientes:',
+          message: 'Se han creado 2 formularios independientes:',
           type: 'success',
           details: details
         })
@@ -377,8 +326,7 @@ function CrearFormulario() {
   const renderQuestions = (formType, questions, setQuestions) => {
     const formLabels = {
       student: { name: 'Estudiante', color: 'red', icon: 'E' },
-      tutor: { name: 'Tutor', color: 'green', icon: 'T' },
-      monitor: { name: 'Monitor', color: 'purple', icon: 'M' }
+      tutor: { name: 'Tutor', color: 'green', icon: 'T' }
     }
     const label = formLabels[formType]
 
@@ -619,7 +567,7 @@ function CrearFormulario() {
           </h1>
         </div>
         <p className="text-gray-600 ml-14">
-          {isEditing ? 'Edita los 3 formularios independientes' : 'Crea 3 formularios independientes: Estudiante, Tutor y Monitor'}
+          {isEditing ? 'Edita los 2 formularios independientes' : 'Crea 2 formularios independientes: Estudiante y Tutor'}
         </p>
       </div>
 
@@ -634,7 +582,7 @@ function CrearFormulario() {
             </div>
             <div>
               <h2 className="text-2xl font-bold">Información del Formulario</h2>
-              <p className="text-red-100 text-sm mt-1">Datos compartidos para los 3 formularios</p>
+              <p className="text-red-100 text-sm mt-1">Datos compartidos para los 2 formularios</p>
             </div>
           </div>
         </div>
@@ -656,7 +604,7 @@ function CrearFormulario() {
                   required
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Este nombre se usará para los 3 formularios
+                  Este nombre se usará para los 2 formularios
                 </p>
               </div>
               <div>
@@ -720,36 +668,18 @@ function CrearFormulario() {
                   </div>
                 </div>
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('monitor')}
-                className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-                  activeTab === 'monitor'
-                    ? 'border-purple-600 text-purple-600 bg-purple-50'
-                    : 'border-transparent text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${activeTab === 'monitor' ? 'bg-purple-600 text-white' : 'bg-gray-300 text-gray-600'}`}>
-                    <span className="text-xs font-bold">M</span>
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span>Monitor ({monitorQuestions.length})</span>
-                  </div>
-                </div>
-              </button>
             </div>
 
             {/* Contenido de las tabs */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-gray-600">
-                  Agrega preguntas específicas para el formulario de <strong>{activeTab === 'student' ? 'Estudiante' : activeTab === 'tutor' ? 'Tutor' : 'Monitor'}</strong>
+                  Agrega preguntas específicas para el formulario de <strong>{activeTab === 'student' ? 'Estudiante' : 'Tutor'}</strong>
                 </p>
                 <button
                   type="button"
                   onClick={() => addQuestion(activeTab)}
-                  className={`bg-${activeTab === 'student' ? 'red' : activeTab === 'tutor' ? 'green' : 'purple'}-600 hover:bg-${activeTab === 'student' ? 'red' : activeTab === 'tutor' ? 'green' : 'purple'}-700 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 shadow-md hover:shadow-lg transition-all`}
+                  className={`bg-${activeTab === 'student' ? 'red' : 'green'}-600 hover:bg-${activeTab === 'student' ? 'red' : 'green'}-700 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 shadow-md hover:shadow-lg transition-all`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -760,7 +690,6 @@ function CrearFormulario() {
 
               {activeTab === 'student' && renderQuestions('student', studentQuestions, setStudentQuestions)}
               {activeTab === 'tutor' && renderQuestions('tutor', tutorQuestions, setTutorQuestions)}
-              {activeTab === 'monitor' && renderQuestions('monitor', monitorQuestions, setMonitorQuestions)}
             </div>
           </div>
 
@@ -792,7 +721,7 @@ function CrearFormulario() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>{isEditing ? 'Actualizar Formularios' : 'Crear 3 Formularios'}</span>
+                    <span>{isEditing ? 'Actualizar Formularios' : 'Crear 2 Formularios'}</span>
                   </>
                 )}
               </button>

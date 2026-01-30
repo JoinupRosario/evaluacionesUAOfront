@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import Alert from '../components/Alert'
 
 function CrearEvaluacion() {
   const { id } = useParams() // Obtener el ID de la URL para edición
+  const isDuplicatingRef = useRef(false) // Ref para evitar que useEffect interfiera al duplicar
 
   const [formData, setFormData] = useState({
     name: '',
     period: '',
     practice_type: '',
+    type_survey: '', // ID del formulario (item.id de MySQL)
     // COMENTADO: faculty_id eliminado - ya no se usa
     program_faculty_ids: [], // Ahora contiene program_id directamente
     start_date: '',
@@ -21,6 +23,7 @@ function CrearEvaluacion() {
   const [periodos, setPeriodos] = useState([])
   // COMENTADO: facultades eliminado - ya no se usa
   const [tiposPractica, setTiposPractica] = useState([])
+  const [tiposEncuesta, setTiposEncuesta] = useState([])
   const [programas, setProgramas] = useState([])
   const [loading, setLoading] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -33,10 +36,10 @@ function CrearEvaluacion() {
 
   useEffect(() => {
     fetchData()
-    if (isEditing && !isDuplicating) {
+    if (isEditing && !isDuplicating && !isDuplicatingRef.current) {
       fetchEvaluationData()
     }
-  }, [isEditing, id, isDuplicating])
+  }, [isEditing, id]) // Removido isDuplicating de las dependencias para evitar re-ejecuciones innecesarias
 
   // COMENTADO: useEffect de facultad eliminado - ahora se cargan todos los programas al inicio
 
@@ -70,6 +73,7 @@ function CrearEvaluacion() {
         name: evaluation.name || '',
         period: evaluation.period?.toString() || '',
         practice_type: evaluation.practice_type?.toString() || '',
+        type_survey: evaluation.type_survey?.toString() || '', // Cargar type_survey
         // COMENTADO: faculty_id eliminado
         program_faculty_ids: evaluation.program_faculty_ids || [], // Ahora contiene program_id directamente
         start_date: formatDateForInput(evaluation.start_date),
@@ -98,14 +102,16 @@ function CrearEvaluacion() {
   const fetchData = async () => {
     try {
       // COMENTADO: facultades eliminado - ya no se usa
-      const [periodosRes, tiposRes, programasRes] = await Promise.all([
+      const [periodosRes, tiposRes, tiposEncuestaRes, programasRes] = await Promise.all([
         api.get('/academics/periodos'),
         api.get('/academics/tipos-practica'),
+        api.get('/academics/tipos-encuesta'),
         api.get('/academics/programas') // Cargar todos los programas al inicio
       ])
       setPeriodos(periodosRes.data)
       // COMENTADO: setFacultades eliminado
       setTiposPractica(tiposRes.data)
+      setTiposEncuesta(tiposEncuestaRes.data)
       setProgramas(programasRes.data) // Cargar todos los programas
     } catch (error) {
       console.error('Error al cargar datos:', error)
@@ -145,17 +151,20 @@ function CrearEvaluacion() {
   }
 
   const handleDuplicate = () => {
-    // Cambiar a modo creación pero mantener todos los datos
-    setIsDuplicating(true)
+    // Marcar que estamos duplicando para evitar que useEffect interfiera
+    isDuplicatingRef.current = true
+    
     // Modificar el nombre para indicar que es una copia (evitar duplicar " (Copia)")
-    setFormData(prev => {
-      const currentName = prev.name || 'Nueva Evaluación'
-      const nameWithoutCopy = currentName.replace(/\s*\(Copia\)\s*$/, '')
-      return {
-        ...prev,
-        name: `${nameWithoutCopy} (Copia)`
-      }
-    })
+    const currentName = formData.name || 'Nueva Evaluación'
+    const nameWithoutCopy = currentName.replace(/\s*\(Copia\)\s*$/, '')
+    
+    // Actualizar el estado del nombre y cambiar a modo duplicación
+    setFormData(prev => ({
+      ...prev,
+      name: `${nameWithoutCopy} (Copia)`
+    }))
+    
+    setIsDuplicating(true)
   }
 
   const handleSubmit = async (e) => {
@@ -176,6 +185,7 @@ function CrearEvaluacion() {
         name: formData.name,
         period: parseInt(formData.period),
         practice_type: formData.practice_type ? parseInt(formData.practice_type) : null,
+        type_survey: formData.type_survey ? parseInt(formData.type_survey) : null, // Incluir type_survey
         // COMENTADO: faculty_id eliminado - ya no se usa
         program_faculty_ids: formData.program_faculty_ids.map(id => parseInt(id)), // Ahora contiene program_id directamente
         start_date: formData.start_date,
@@ -375,6 +385,26 @@ function CrearEvaluacion() {
                     {periodos.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name || p.period}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 text-sm font-semibold mb-2">
+                    Tipo de Encuesta <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="type_survey"
+                    value={formData.type_survey}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all bg-white"
+                    required
+                  >
+                    <option value="">Selecciona un tipo de encuesta</option>
+                    {tiposEncuesta.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.value || t.description}
                       </option>
                     ))}
                   </select>
