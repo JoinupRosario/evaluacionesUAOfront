@@ -210,30 +210,15 @@ function Dashboard() {
       
       setMongoDetails(data)
     } catch (error) {
-      console.error('Error al obtener detalles de MongoDB:', error)
+      console.error('Error al obtener detalles:', error)
       
-      // Verificar si es porque la evaluación no está en MongoDB (sistema antiguo)
-      const errorMessage = error.response?.data?.error || error.message
-      const isNotFound = error.response?.status === 404 || 
-                        errorMessage?.includes('no encontrada en MongoDB') ||
-                        errorMessage?.includes('Evaluación no encontrada en MongoDB')
-      
-      if (isNotFound) {
-        setAlert({
-          isOpen: true,
-          title: 'Evaluación del Sistema Anterior',
-          message: 'Esta evaluación es parte del sistema de evaluaciones anterior. Solo se pueden visualizar los detalles de las evaluaciones creadas en este nuevo sistema.',
-          type: 'info'
-        })
-      } else {
-        setAlert({
-          isOpen: true,
-          title: 'Error',
-          message: 'No se pudieron cargar los detalles de MongoDB',
-          type: 'error',
-          details: errorMessage
-        })
-      }
+      setAlert({
+        isOpen: true,
+        title: 'Error',
+        message: 'No se pudieron cargar los detalles de la evaluación',
+        type: 'error',
+        details: error.response?.data?.error || error.message
+      })
       setViewModalOpen(false)
     } finally {
       setLoadingDetails(false)
@@ -663,9 +648,24 @@ function Dashboard() {
             {/* Modal PRÁCTICAS */}
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full max-w-[95vw]">
               <div className="bg-white px-3 sm:px-4 pt-4 pb-3 sm:pt-5 sm:pb-4 sm:p-6">
+                {/* Banner para evaluaciones del sistema anterior */}
+                {mongoDetails.is_legacy && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">Evaluación del Sistema Anterior</p>
+                        <p className="text-xs text-amber-700">Los datos de actores se obtuvieron dinámicamente. Esta evaluación no tiene links de acceso generados.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center mb-3 sm:mb-4">
                   <h3 className="text-base sm:text-lg font-medium text-gray-900">
-                    Detalles de Evaluación - Práctica (MongoDB)
+                    Detalles de Evaluación - Práctica {mongoDetails.is_legacy ? '(Sistema Anterior)' : '(MongoDB)'}
                   </h3>
                   <button
                     onClick={() => {
