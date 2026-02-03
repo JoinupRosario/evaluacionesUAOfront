@@ -130,9 +130,48 @@ function ResponderEvaluacion() {
     return ''
   }
 
+  // Texto de competencias según el tipo de actor
+  const getCompetenciasText = () => {
+    const actorType = data?.accessToken?.actor_type
+    
+    if (actorType === 'student') {
+      return (
+        <div className="bg-gray-50 border-l-4 border-red-600 p-4 mb-6 text-sm text-gray-700">
+          <p className="mb-3">
+            Las competencias son habilidades, cualidades o destrezas que se observan fácilmente a través de comportamientos. En el mercado laboral actual los profesionales más destacados son aquellos que cuentan con competencias altamente desarrolladas. A continuación encontrará 14 competencias que son claves para enfrentar de manera exitosa los retos que se le están presentando como practicante. Valore cada una de ellas teniendo en cuenta los siguientes niveles de desarrollo:
+          </p>
+          <p className="mb-1"><span className="font-semibold text-green-600">Fortaleza</span> = Considero que esta competencia es una de mis fortalezas.</p>
+          <p className="mb-1"><span className="font-semibold text-yellow-600">Por mejorar</span> = Algunas veces mis acciones reflejan fortalezas en esta competencia pero considero que tengo aspectos por mejorar.</p>
+          <p><span className="font-semibold text-red-600">Falencia</span> = Considero que en esta competencia tengo mucho por mejorar.</p>
+        </div>
+      )
+    } else if (actorType === 'boss') {
+      return (
+        <div className="bg-gray-50 border-l-4 border-red-600 p-4 mb-6 text-sm text-gray-700">
+          <p className="mb-3">
+            Las competencias son habilidades, cualidades o destrezas que se observan fácilmente a través de comportamientos. En el mercado laboral actual los profesionales más destacados son aquellos que cuentan con competencias altamente desarrolladas. A continuación encontrará 14 competencias que son claves para enfrentar de manera exitosa los retos que se le están presentando al practicante. Valore cada una de ellas teniendo en cuenta los siguientes niveles de desarrollo:
+          </p>
+          <p className="mb-1"><span className="font-semibold text-green-600">Fortaleza</span> = Considero que esta competencia es una fortaleza en el estudiante.</p>
+          <p className="mb-1"><span className="font-semibold text-yellow-600">Por mejorar</span> = Algunas veces las acciones del estudiante reflejan fortalezas en esta competencia pero existen aspectos por mejorar.</p>
+          <p><span className="font-semibold text-red-600">Falencia</span> = Considero que en esta competencia el estudiante tiene mucho por mejorar.</p>
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="max-w-3xl mx-auto px-4">
+        {/* Logo de la Universidad */}
+        <div className="text-center mb-6">
+          <img 
+            src="https://avasalud-1.s3.us-east-1.amazonaws.com/clinics/patients/undefined/logouao.png" 
+            alt="Universidad Autónoma de Occidente" 
+            className="mx-auto h-24 object-contain"
+          />
+        </div>
+
         <div className="bg-white rounded-lg shadow-md p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             {data.evaluation?.name || 'Evaluación'}
@@ -142,6 +181,9 @@ function ResponderEvaluacion() {
               Tipo: {getActorLabel()} | Email: {data.accessToken.email}
             </p>
           )}
+
+          {/* Texto de competencias según el tipo de actor */}
+          {getCompetenciasText()}
 
           {data.questions && data.questions.length > 0 ? (
             <form onSubmit={handleSubmit}>

@@ -33,6 +33,8 @@ function Dashboard() {
   const [periodos, setPeriodos] = useState([])
   const [tiposEncuesta, setTiposEncuesta] = useState([])
   const [searchInput, setSearchInput] = useState('')
+  const [pendingShouldSendChanges, setPendingShouldSendChanges] = useState({})
+  const [savingChanges, setSavingChanges] = useState(false)
 
   useEffect(() => {
     fetchFilterOptions()
@@ -250,6 +252,114 @@ function Dashboard() {
     } finally {
       setLoadingResponse(false)
     }
+  }
+
+  // Función para manejar cambios en checkboxes de should_send
+  const handleShouldSendChange = (legalizationId, actorType, newValue) => {
+    setPendingShouldSendChanges(prev => ({
+      ...prev,
+      [`${actorType}_${legalizationId}`]: { legalization_id: legalizationId, actor_type: actorType, should_send: newValue }
+    }))
+  }
+
+  // Función para obtener el valor actual de should_send (considerando cambios pendientes)
+  const getShouldSendValue = (legalizationId, actorType, originalValue) => {
+    const key = `${actorType}_${legalizationId}`
+    if (pendingShouldSendChanges[key] !== undefined) {
+      return pendingShouldSendChanges[key].should_send
+    }
+    return originalValue !== undefined ? originalValue : true
+  }
+
+  // Función para seleccionar/deseleccionar todos de un tipo
+  const handleSelectAllType = (actorType, emails, selectAll) => {
+    const changes = {}
+    emails.forEach(item => {
+      const key = `${actorType}_${item.legalization_id}`
+      changes[key] = { legalization_id: item.legalization_id, actor_type: actorType, should_send: selectAll }
+    })
+    setPendingShouldSendChanges(prev => ({ ...prev, ...changes }))
+  }
+
+  // Función para verificar si todos están seleccionados
+  const areAllSelected = (actorType, emails) => {
+    if (!emails || emails.length === 0) return false
+    return emails.every(item => getShouldSendValue(item.legalization_id, actorType, item.should_send))
+  }
+
+  // Función para guardar los cambios de should_send
+  const saveShouldSendChanges = async () => {
+    if (Object.keys(pendingShouldSendChanges).length === 0) {
+      setAlert({
+        isOpen: true,
+        title: 'Info',
+        message: 'No hay cambios pendientes para guardar',
+        type: 'info'
+      })
+      return
+    }
+
+    setSavingChanges(true)
+    try {
+      const tokens = Object.values(pendingShouldSendChanges)
+      await api.put(`/evaluations/${mongoDetails.evaluation_id_mysql}/tokens/should-send`, { tokens })
+      
+      // Actualizar mongoDetails con los nuevos valores
+      setMongoDetails(prev => {
+        const updated = { ...prev }
+        
+        // Actualizar student_emails
+        if (updated.student_emails) {
+          updated.student_emails = updated.student_emails.map(item => {
+            const change = pendingShouldSendChanges[`student_${item.legalization_id}`]
+            return change ? { ...item, should_send: change.should_send } : item
+          })
+        }
+        
+        // Actualizar boss_emails
+        if (updated.boss_emails) {
+          updated.boss_emails = updated.boss_emails.map(item => {
+            const change = pendingShouldSendChanges[`boss_${item.legalization_id}`]
+            return change ? { ...item, should_send: change.should_send } : item
+          })
+        }
+        
+        // Actualizar monitor_emails
+        if (updated.monitor_emails) {
+          updated.monitor_emails = updated.monitor_emails.map(item => {
+            const change = pendingShouldSendChanges[`monitor_${item.legalization_id}`]
+            return change ? { ...item, should_send: change.should_send } : item
+          })
+        }
+        
+        return updated
+      })
+      
+      setPendingShouldSendChanges({})
+      setAlert({
+        isOpen: true,
+        title: 'Éxito',
+        message: 'Configuración de envío guardada correctamente',
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Error al guardar cambios:', error)
+      setAlert({
+        isOpen: true,
+        title: 'Error',
+        message: 'No se pudieron guardar los cambios',
+        type: 'error',
+        details: error.response?.data?.error || error.message
+      })
+    } finally {
+      setSavingChanges(false)
+    }
+  }
+
+  // Contar cuántos están seleccionados para envío
+  const countSelectedForSend = (actorType, emails) => {
+    if (!emails || emails.length === 0) return 0
+    return emails.filter(item => getShouldSendValue(item.legalization_id, actorType, item.should_send)).length
   }
 
   return (
@@ -744,14 +854,48 @@ function Dashboard() {
 
                     {/* Correos de Estudiantes */}
                     <div className="border-b pb-3 sm:pb-4">
-                      <h4 className="text-sm sm:text-md font-semibold text-gray-900 mb-2 sm:mb-3">
-                        Correos de Estudiantes ({mongoDetails.student_emails?.length || 0})
-                      </h4>
+                      <div className="flex justify-between items-center mb-2 sm:mb-3">
+                        <h4 className="text-sm sm:text-md font-semibold text-gray-900">
+                          Correos de Estudiantes ({mongoDetails.student_emails?.length || 0})
+                          {!mongoDetails.is_legacy && (
+                            <span className="ml-2 text-xs font-normal text-blue-600">
+                              ({countSelectedForSend('student', mongoDetails.student_emails)} seleccionados para envío)
+                            </span>
+                          )}
+                        </h4>
+                        {!mongoDetails.is_legacy && mongoDetails.student_emails && mongoDetails.student_emails.length > 0 && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleSelectAllType('student', mongoDetails.student_emails, true)}
+                              className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                            >
+                              Todos
+                            </button>
+                            <button
+                              onClick={() => handleSelectAllType('student', mongoDetails.student_emails, false)}
+                              className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            >
+                              Ninguno
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       {mongoDetails.student_emails && mongoDetails.student_emails.length > 0 ? (
                         <div className="max-h-48 overflow-x-auto overflow-y-auto">
                           <table className="min-w-full text-xs sm:text-sm">
                             <thead className="bg-gray-50 sticky top-0">
                               <tr>
+                                {!mongoDetails.is_legacy && (
+                                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-center text-xs font-medium text-gray-700">
+                                    <input
+                                      type="checkbox"
+                                      checked={areAllSelected('student', mongoDetails.student_emails)}
+                                      onChange={(e) => handleSelectAllType('student', mongoDetails.student_emails, e.target.checked)}
+                                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                      title="Seleccionar/deseleccionar todos"
+                                    />
+                                  </th>
+                                )}
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">ID</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Correo</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Link</th>
@@ -760,7 +904,18 @@ function Dashboard() {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                               {mongoDetails.student_emails.map((item, idx) => (
-                                <tr key={idx}>
+                                <tr key={idx} className={!getShouldSendValue(item.legalization_id, 'student', item.should_send) ? 'bg-gray-50 opacity-60' : ''}>
+                                  {!mongoDetails.is_legacy && (
+                                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={getShouldSendValue(item.legalization_id, 'student', item.should_send)}
+                                        onChange={(e) => handleShouldSendChange(item.legalization_id, 'student', e.target.checked)}
+                                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                        title={getShouldSendValue(item.legalization_id, 'student', item.should_send) ? 'Marcado para envío' : 'No se enviará correo'}
+                                      />
+                                    </td>
+                                  )}
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 whitespace-nowrap">{item.legalization_id}</td>
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 break-all">{item.email}</td>
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2">
@@ -813,14 +968,48 @@ function Dashboard() {
                     {/* Correos de Jefes */}
                     {/* COMENTADO: Condición eliminada - Solo se manejan prácticas, no se usa monitorias */}
                     <div className="border-b pb-3 sm:pb-4">
-                        <h4 className="text-sm sm:text-md font-semibold text-gray-900 mb-2 sm:mb-3">
-                          Correos de Jefes ({mongoDetails.boss_emails?.length || 0})
-                        </h4>
+                        <div className="flex justify-between items-center mb-2 sm:mb-3">
+                          <h4 className="text-sm sm:text-md font-semibold text-gray-900">
+                            Correos de Jefes ({mongoDetails.boss_emails?.length || 0})
+                            {!mongoDetails.is_legacy && (
+                              <span className="ml-2 text-xs font-normal text-blue-600">
+                                ({countSelectedForSend('boss', mongoDetails.boss_emails)} seleccionados para envío)
+                              </span>
+                            )}
+                          </h4>
+                          {!mongoDetails.is_legacy && mongoDetails.boss_emails && mongoDetails.boss_emails.length > 0 && (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleSelectAllType('boss', mongoDetails.boss_emails, true)}
+                                className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                              >
+                                Todos
+                              </button>
+                              <button
+                                onClick={() => handleSelectAllType('boss', mongoDetails.boss_emails, false)}
+                                className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Ninguno
+                              </button>
+                            </div>
+                          )}
+                        </div>
                         {mongoDetails.boss_emails && mongoDetails.boss_emails.length > 0 ? (
                           <div className="max-h-48 overflow-x-auto overflow-y-auto">
                             <table className="min-w-full text-xs sm:text-sm">
                               <thead className="bg-gray-50 sticky top-0">
                                 <tr>
+                                  {!mongoDetails.is_legacy && (
+                                    <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-center text-xs font-medium text-gray-700">
+                                      <input
+                                        type="checkbox"
+                                        checked={areAllSelected('boss', mongoDetails.boss_emails)}
+                                        onChange={(e) => handleSelectAllType('boss', mongoDetails.boss_emails, e.target.checked)}
+                                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                        title="Seleccionar/deseleccionar todos"
+                                      />
+                                    </th>
+                                  )}
                                   <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">ID</th>
                                   <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Correo</th>
                                   <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Link</th>
@@ -829,7 +1018,18 @@ function Dashboard() {
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
                                 {mongoDetails.boss_emails.map((item, idx) => (
-                                  <tr key={idx}>
+                                  <tr key={idx} className={!getShouldSendValue(item.legalization_id, 'boss', item.should_send) ? 'bg-gray-50 opacity-60' : ''}>
+                                    {!mongoDetails.is_legacy && (
+                                      <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={getShouldSendValue(item.legalization_id, 'boss', item.should_send)}
+                                          onChange={(e) => handleShouldSendChange(item.legalization_id, 'boss', e.target.checked)}
+                                          className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                          title={getShouldSendValue(item.legalization_id, 'boss', item.should_send) ? 'Marcado para envío' : 'No se enviará correo'}
+                                        />
+                                      </td>
+                                    )}
                                     <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 whitespace-nowrap">{item.legalization_id}</td>
                                     <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 break-all">{item.email}</td>
                                     <td className="px-2 sm:px-3 py-1.5 sm:py-2">
@@ -882,11 +1082,37 @@ function Dashboard() {
                   </div>
                 )}
               </div>
-              <div className="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                {!mongoDetails.is_legacy && Object.keys(pendingShouldSendChanges).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={saveShouldSendChanges}
+                    disabled={savingChanges}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-sm sm:text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto disabled:opacity-50"
+                  >
+                    {savingChanges ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Guardar Cambios ({Object.keys(pendingShouldSendChanges).length})
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
                     setViewModalOpen(false)
+                    setPendingShouldSendChanges({})
                     setMongoDetails(null)
                   }}
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-sm sm:text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto"

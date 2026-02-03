@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import logoImage from '../assets/images/header-P3vrLVaL.png'
+import logoImage from '../assets/images/logouao.png'
 import ChangePasswordModal from './ChangePasswordModal'
 
 function Layout({ children }) {
