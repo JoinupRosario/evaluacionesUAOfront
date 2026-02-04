@@ -35,6 +35,8 @@ function Dashboard() {
   const [searchInput, setSearchInput] = useState('')
   const [pendingShouldSendChanges, setPendingShouldSendChanges] = useState({})
   const [savingChanges, setSavingChanges] = useState(false)
+  const [downloadingLinkReport, setDownloadingLinkReport] = useState(false)
+  const [downloadingAnswersReport, setDownloadingAnswersReport] = useState(false)
 
   useEffect(() => {
     fetchFilterOptions()
@@ -360,6 +362,118 @@ function Dashboard() {
   const countSelectedForSend = (actorType, emails) => {
     if (!emails || emails.length === 0) return 0
     return emails.filter(item => getShouldSendValue(item.legalization_id, actorType, item.should_send)).length
+  }
+
+  // Obtener los legalization_ids de los estudiantes seleccionados (con checkbox marcado)
+  const getSelectedLegalizationIds = () => {
+    if (!mongoDetails?.student_emails) return []
+    return mongoDetails.student_emails
+      .filter(item => getShouldSendValue(item.legalization_id, 'student', item.should_send))
+      .map(item => item.legalization_id)
+  }
+
+  // Descargar reporte de links
+  const handleDownloadLinkReport = async () => {
+    const legalizationIds = getSelectedLegalizationIds()
+    
+    if (legalizationIds.length === 0) {
+      setAlert({
+        isOpen: true,
+        title: 'Atención',
+        message: 'No hay estudiantes seleccionados para generar el reporte',
+        type: 'warning'
+      })
+      return
+    }
+
+    setDownloadingLinkReport(true)
+    try {
+      const response = await api.post(
+        `/evaluations/${mongoDetails.evaluation_id_mysql}/export-links`,
+        { legalization_ids: legalizationIds },
+        { responseType: 'blob' }
+      )
+      
+      // Crear enlace de descarga
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `reporte_links_${mongoDetails.evaluation_id_mysql}_${new Date().toISOString().split('T')[0]}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      
+      setAlert({
+        isOpen: true,
+        title: 'Éxito',
+        message: `Reporte de links descargado con ${legalizationIds.length} registros`,
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Error al descargar reporte de links:', error)
+      setAlert({
+        isOpen: true,
+        title: 'Error',
+        message: 'No se pudo descargar el reporte de links',
+        type: 'error',
+        details: error.response?.data?.error || error.message
+      })
+    } finally {
+      setDownloadingLinkReport(false)
+    }
+  }
+
+  // Descargar reporte de respuestas
+  const handleDownloadAnswersReport = async () => {
+    const legalizationIds = getSelectedLegalizationIds()
+    
+    if (legalizationIds.length === 0) {
+      setAlert({
+        isOpen: true,
+        title: 'Atención',
+        message: 'No hay estudiantes seleccionados para generar el reporte',
+        type: 'warning'
+      })
+      return
+    }
+
+    setDownloadingAnswersReport(true)
+    try {
+      const response = await api.post(
+        `/evaluations/${mongoDetails.evaluation_id_mysql}/export-answers`,
+        { legalization_ids: legalizationIds },
+        { responseType: 'blob' }
+      )
+      
+      // Crear enlace de descarga
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `respuestas_${mongoDetails.evaluation_id_mysql}_${new Date().toISOString().split('T')[0]}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      
+      setAlert({
+        isOpen: true,
+        title: 'Éxito',
+        message: `Reporte de respuestas descargado con ${legalizationIds.length} registros`,
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Error al descargar reporte de respuestas:', error)
+      setAlert({
+        isOpen: true,
+        title: 'Error',
+        message: 'No se pudo descargar el reporte de respuestas',
+        type: 'error',
+        details: error.response?.data?.error || error.message
+      })
+    } finally {
+      setDownloadingAnswersReport(false)
+    }
   }
 
   return (
@@ -839,7 +953,59 @@ function Dashboard() {
 
                     {/* Totales - SOLO PRÁCTICAS */}
                     <div className="border-b pb-3 sm:pb-4">
-                      <h4 className="text-sm sm:text-md font-semibold text-gray-900 mb-2 sm:mb-3">Totales</h4>
+                      <div className="flex flex-wrap justify-between items-start gap-3 mb-2 sm:mb-3">
+                        <h4 className="text-sm sm:text-md font-semibold text-gray-900">Totales</h4>
+                        {!mongoDetails.is_legacy && (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={handleDownloadLinkReport}
+                              disabled={downloadingLinkReport}
+                              className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Descargar reporte con información y links de los estudiantes seleccionados"
+                            >
+                              {downloadingLinkReport ? (
+                                <>
+                                  <svg className="animate-spin -ml-0.5 mr-1.5 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Descargando...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  Bajar Reporte Link
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={handleDownloadAnswersReport}
+                              disabled={downloadingAnswersReport}
+                              className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Descargar respuestas de evaluación de los estudiantes seleccionados"
+                            >
+                              {downloadingAnswersReport ? (
+                                <>
+                                  <svg className="animate-spin -ml-0.5 mr-1.5 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Descargando...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  Bajar Respuestas
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                         <div>
                           <span className="font-medium text-gray-700">Estudiantes:</span>
