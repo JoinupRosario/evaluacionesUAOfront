@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
+import AuthCallback from './pages/AuthCallback'
 import Dashboard from './pages/Dashboard'
 import CrearEvaluacion from './pages/CrearEvaluacion'
 import ResponderEvaluacion from './pages/ResponderEvaluacion'
@@ -25,6 +26,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/api/auth/azure/callback" element={<AuthCallback />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/formularios" element={<PrivateRoute><Formularios /></PrivateRoute>} />
       <Route path="/crear-formulario" element={<PrivateRoute><CrearFormulario /></PrivateRoute>} />

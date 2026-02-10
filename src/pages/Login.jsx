@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import logo from '../assets/images/logouao.png'
 
@@ -10,6 +10,64 @@ function Login() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Verificar si hay errores en la URL (desde Azure AD callback)
+  useEffect(() => {
+    const urlError = searchParams.get('error')
+    const errorMessage = searchParams.get('message')
+    const userEmail = searchParams.get('email')
+    
+    if (urlError) {
+      let errorText = 'Error al iniciar sesión'
+      
+      switch (urlError) {
+        case 'azure_login_failed':
+          errorText = 'Error al iniciar sesión con Office 365. Por favor, intenta nuevamente.'
+          break
+        case 'azure_auth_failed':
+          errorText = errorMessage || 'Error en la autenticación con Office 365.'
+          break
+        case 'no_authorization_code':
+          errorText = 'No se recibió el código de autorización de Office 365.'
+          break
+        case 'token_acquisition_failed':
+          errorText = 'Error al obtener el token de Office 365.'
+          break
+        case 'no_email_in_token':
+          errorText = 'No se encontró el email en el token de Office 365.'
+          break
+        case 'user_not_found':
+          errorText = userEmail 
+            ? `Usuario no encontrado: ${userEmail}. Contacta al administrador.`
+            : 'Usuario no encontrado en el sistema. Contacta al administrador.'
+          break
+        case 'no_roles_assigned':
+          errorText = 'Acceso denegado: el usuario no tiene roles asignados.'
+          break
+        case 'callback_error':
+          errorText = errorMessage || 'Error en el proceso de autenticación.'
+          break
+        case 'exchange_error':
+          errorText = errorMessage || 'Error al intercambiar el código de autorización. Por favor, intenta iniciar sesión nuevamente.'
+          break
+        case 'missing_code':
+          errorText = 'No se recibió el código de autorización. Por favor, intenta iniciar sesión nuevamente.'
+          break
+        default:
+          errorText = errorMessage || 'Error desconocido al iniciar sesión.'
+      }
+      
+      setError(errorText)
+      // Limpiar los parámetros de la URL
+      navigate('/login', { replace: true })
+    }
+  }, [searchParams, navigate])
+
+  const handleAzureLogin = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    window.location.href = `${apiUrl}/auth/azure`
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -96,6 +154,32 @@ function Login() {
             )}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">O</span>
+          </div>
+        </div>
+
+        {/* Botón de Office 365 */}
+        <button
+          type="button"
+          onClick={handleAzureLogin}
+          disabled={loading}
+          className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-4 focus:ring-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all shadow-md flex items-center justify-center space-x-2"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0.5" y="0.5" width="10" height="10" fill="#F25022"/>
+            <rect x="12.5" y="0.5" width="10" height="10" fill="#7FBA00"/>
+            <rect x="0.5" y="12.5" width="10" height="10" fill="#00A4EF"/>
+            <rect x="12.5" y="12.5" width="10" height="10" fill="#FFB900"/>
+          </svg>
+          <span>Iniciar sesión con Office 365</span>
+        </button>
       </div>
     </div>
   )

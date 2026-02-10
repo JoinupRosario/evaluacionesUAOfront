@@ -73,6 +73,14 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const handleAzureCallback = (newToken, userData) => {
+    setToken(newToken)
+    setUser(userData)
+    localStorage.setItem('token', newToken)
+    localStorage.setItem('user', JSON.stringify(userData))
+    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -80,6 +88,7 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       changePassword,
+      handleAzureCallback,
       isAuthenticated: !!token,
       loading
     }}>
