@@ -11,6 +11,7 @@ function ResponderEvaluacion() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [alert, setAlert] = useState({ isOpen: false, title: '', message: '', type: 'success', details: null })
+  const [tokenAlreadyUsed, setTokenAlreadyUsed] = useState(false)
 
   useEffect(() => {
     fetchEvaluation()
@@ -37,14 +38,29 @@ function ResponderEvaluacion() {
       }
       setAnswers(initialAnswers)
     } catch (error) {
-      console.error('Error al cargar evaluación:', error)
-      setAlert({
-        isOpen: true,
-        title: 'Error',
-        message: error.response?.data?.error || 'Token inválido o evaluación no encontrada',
-        type: 'error',
-        details: error.response?.data?.details || error.message
-      })
+      const errorMessage = error.response?.data?.error || ''
+      
+      // Detectar si el token ya fue utilizado
+      if (errorMessage.includes('ya fue utilizado') || errorMessage.includes('ya fue usado') || errorMessage.includes('token ya fue')) {
+        setTokenAlreadyUsed(true)
+        setAlert({
+          isOpen: true,
+          title: 'Evaluación ya completada',
+          message: 'Esta evaluación ya fue respondida anteriormente. No es posible enviar respuestas adicionales.',
+          type: 'info',
+          details: 'Gracias por tu participación. Si tienes alguna consulta, por favor contacta al administrador del sistema.'
+        })
+      } else {
+        // Solo mostrar error en consola si no es el caso del token usado
+        console.error('Error al cargar evaluación:', error)
+        setAlert({
+          isOpen: true,
+          title: 'Error',
+          message: errorMessage || 'Token inválido o evaluación no encontrada',
+          type: 'error',
+          details: error.response?.data?.details || error.message
+        })
+      }
     } finally {
       setLoading(false)
     }
@@ -110,11 +126,34 @@ function ResponderEvaluacion() {
     )
   }
 
-  if (!data) {
+  if (!data && !tokenAlreadyUsed) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">No se pudo cargar la evaluación</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center bg-white p-8 rounded-lg shadow-md max-w-md">
+          <div className="mb-4">
+            <svg className="w-16 h-16 mx-auto text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-red-600 text-lg font-medium">No se pudo cargar la evaluación</p>
+          <p className="text-gray-600 text-sm mt-2">Por favor, verifica que el enlace sea correcto.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (tokenAlreadyUsed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center bg-white p-8 rounded-lg shadow-md max-w-md">
+          <div className="mb-4">
+            <svg className="w-16 h-16 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">Evaluación ya completada</h2>
+          <p className="text-gray-600 mb-4">Esta evaluación ya fue respondida anteriormente.</p>
+          <p className="text-gray-500 text-sm">Gracias por tu participación.</p>
         </div>
       </div>
     )

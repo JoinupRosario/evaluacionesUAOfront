@@ -364,6 +364,22 @@ function Dashboard() {
     return emails.filter(item => getShouldSendValue(item.legalization_id, actorType, item.should_send)).length
   }
 
+  // Contar cuántos seleccionados ya fueron usados (respondidos)
+  const countSelectedUsed = (actorType, emails) => {
+    if (!emails || emails.length === 0) return 0
+    return emails.filter(item => 
+      getShouldSendValue(item.legalization_id, actorType, item.should_send) && item.usado
+    ).length
+  }
+
+  // Contar cuántos seleccionados faltan por responder
+  const countSelectedPending = (actorType, emails) => {
+    if (!emails || emails.length === 0) return 0
+    return emails.filter(item => 
+      getShouldSendValue(item.legalization_id, actorType, item.should_send) && !item.usado
+    ).length
+  }
+
   // Obtener los legalization_ids de los estudiantes seleccionados (con checkbox marcado)
   const getSelectedLegalizationIds = () => {
     if (!mongoDetails?.student_emails) return []
@@ -1021,14 +1037,29 @@ function Dashboard() {
                     {/* Correos de Estudiantes */}
                     <div className="border-b pb-3 sm:pb-4">
                       <div className="flex justify-between items-center mb-2 sm:mb-3">
-                        <h4 className="text-sm sm:text-md font-semibold text-gray-900">
-                          Correos de Estudiantes ({mongoDetails.student_emails?.length || 0})
-                          {!mongoDetails.is_legacy && (
-                            <span className="ml-2 text-xs font-normal text-blue-600">
-                              ({countSelectedForSend('student', mongoDetails.student_emails)} seleccionados para envío)
-                            </span>
-                          )}
-                        </h4>
+                        <div className="flex-1">
+                          <h4 className="text-sm sm:text-md font-semibold text-gray-900">
+                            Correos de Estudiantes ({mongoDetails.student_emails?.length || 0})
+                            {!mongoDetails.is_legacy && (
+                              <>
+                                <span className="ml-2 text-xs font-normal text-blue-600">
+                                  ({countSelectedForSend('student', mongoDetails.student_emails)} seleccionados para envío)
+                                </span>
+                                {countSelectedForSend('student', mongoDetails.student_emails) > 0 && (
+                                  <span className="ml-2 text-xs font-normal">
+                                    <span className="text-green-600 font-medium">
+                                      {countSelectedUsed('student', mongoDetails.student_emails)} respondidos
+                                    </span>
+                                    {' / '}
+                                    <span className="text-yellow-600 font-medium">
+                                      {countSelectedPending('student', mongoDetails.student_emails)} pendientes
+                                    </span>
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </h4>
+                        </div>
                         {!mongoDetails.is_legacy && mongoDetails.student_emails && mongoDetails.student_emails.length > 0 && (
                           <div className="flex space-x-2">
                             <button
@@ -1135,14 +1166,29 @@ function Dashboard() {
                     {/* COMENTADO: Condición eliminada - Solo se manejan prácticas, no se usa monitorias */}
                     <div className="border-b pb-3 sm:pb-4">
                         <div className="flex justify-between items-center mb-2 sm:mb-3">
-                          <h4 className="text-sm sm:text-md font-semibold text-gray-900">
-                            Correos de Jefes ({mongoDetails.boss_emails?.length || 0})
-                            {!mongoDetails.is_legacy && (
-                              <span className="ml-2 text-xs font-normal text-blue-600">
-                                ({countSelectedForSend('boss', mongoDetails.boss_emails)} seleccionados para envío)
-                              </span>
-                            )}
-                          </h4>
+                          <div className="flex-1">
+                            <h4 className="text-sm sm:text-md font-semibold text-gray-900">
+                              Correos de Jefes ({mongoDetails.boss_emails?.length || 0})
+                              {!mongoDetails.is_legacy && (
+                                <>
+                                  <span className="ml-2 text-xs font-normal text-blue-600">
+                                    ({countSelectedForSend('boss', mongoDetails.boss_emails)} seleccionados para envío)
+                                  </span>
+                                  {countSelectedForSend('boss', mongoDetails.boss_emails) > 0 && (
+                                    <span className="ml-2 text-xs font-normal">
+                                      <span className="text-green-600 font-medium">
+                                        {countSelectedUsed('boss', mongoDetails.boss_emails)} respondidos
+                                      </span>
+                                      {' / '}
+                                      <span className="text-yellow-600 font-medium">
+                                        {countSelectedPending('boss', mongoDetails.boss_emails)} pendientes
+                                      </span>
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </h4>
+                          </div>
                           {!mongoDetails.is_legacy && mongoDetails.boss_emails && mongoDetails.boss_emails.length > 0 && (
                             <div className="flex space-x-2">
                               <button
