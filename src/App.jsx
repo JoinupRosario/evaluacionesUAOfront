@@ -22,6 +22,22 @@ const PrivateRoute = ({ children }) => {
   return isAuthenticated ? <Layout>{children}</Layout> : <Navigate to="/login" />
 }
 
+const FormulariosRoute = ({ children }) => {
+  const { user, isAuthenticated, loading } = useAuth()
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+  if (!isAuthenticated) return <Navigate to="/login" />
+  if (user?.conexion_role !== 'Administrador General') {
+    return <Navigate to="/dashboard" replace />
+  }
+  return <Layout>{children}</Layout>
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -29,9 +45,9 @@ function AppRoutes() {
       <Route path="/api/auth/azure/callback" element={<AuthCallback />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-      <Route path="/formularios" element={<PrivateRoute><Formularios /></PrivateRoute>} />
-      <Route path="/crear-formulario" element={<PrivateRoute><CrearFormulario /></PrivateRoute>} />
-      <Route path="/editar-formulario/:id" element={<PrivateRoute><CrearFormulario /></PrivateRoute>} />
+      <Route path="/formularios" element={<FormulariosRoute><Formularios /></FormulariosRoute>} />
+      <Route path="/crear-formulario" element={<FormulariosRoute><CrearFormulario /></FormulariosRoute>} />
+      <Route path="/editar-formulario/:id" element={<FormulariosRoute><CrearFormulario /></FormulariosRoute>} />
       <Route path="/crear-evaluacion" element={<PrivateRoute><CrearEvaluacion /></PrivateRoute>} />
       <Route path="/editar-evaluacion/:id" element={<PrivateRoute><CrearEvaluacion /></PrivateRoute>} />
       <Route path="/responder-evaluacion/:token" element={<ResponderEvaluacion />} />
