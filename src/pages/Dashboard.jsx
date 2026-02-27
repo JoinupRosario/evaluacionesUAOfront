@@ -2,8 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import Alert from '../components/Alert'
+import { useAuth } from '../context/AuthContext'
 
 function Dashboard() {
+  const { user } = useAuth()
+  const isAdmin = user?.conexion_role === 'Administrador General'
   // const [activeTab, setActiveTab] = useState('practices') // 'practices' o 'monitoring' - COMENTADO: No se usa monitorias
   const [evaluations, setEvaluations] = useState([])
   // const [monitoringEvaluations, setMonitoringEvaluations] = useState([]) // COMENTADO: No se usa monitorias
@@ -499,15 +502,17 @@ function Dashboard() {
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">Gestiona tus evaluaciones</p>
         </div>
-        <Link
-          to="/crear-evaluacion"
-          className="bg-red-800 hover:bg-red-900 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center space-x-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Nueva Evaluación</span>
-        </Link>
+        {isAdmin && (
+          <Link
+            to="/crear-evaluacion"
+            className="bg-red-800 hover:bg-red-900 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Nueva Evaluación</span>
+          </Link>
+        )}
       </div>
 
       {/* COMENTADO: Pestañas eliminadas - No se usa monitorias, solo prácticas */}
