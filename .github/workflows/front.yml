@@ -1,0 +1,55 @@
+name: Frontend - Evaluaciones Autonoma
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: 344261432125
+  FRONT_BUCKET: evaluaciones-autonoma-frontend
+  CLOUDFRONT_ID: REEMPLAZAR_ID
+  VITE_BACKEND_URL: https://evaluaciones.autonoma.mozartia.com
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::344261432125:role/evaluaciones-autonoma-gha-role
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+        env:
+          NODE_ENV: development
+          NPM_CONFIG_PRODUCTION: false
+
+      - name: Build
+        run: |
+          echo "VITE_BACKEND_URL=${{ env.VITE_BACKEND_URL }}" >> .env
+          CI=false npm run build
+
+      - name: Sync to S3
+        run: aws s3 sync dist/ s3://${{ env.FRONT_BUCKET }} --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_ID }} \
+            --paths "/*"
