@@ -115,7 +115,7 @@ function Layout({ children }) {
               {sidebarOpen && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{user?.name}</p>
-                  <p className="text-xs text-gray-400 capitalize truncate">{user?.role}</p>
+                  <p className="text-xs text-gray-400 capitalize truncate">{user?.conexion_role}</p>
                 </div>
               )}
             </div>
@@ -145,7 +145,7 @@ function Layout({ children }) {
           <div className="flex items-center space-x-4">
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+              <p className="text-xs text-gray-500 capitalize">{user?.conexion_role}</p>
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -230,7 +230,7 @@ function Layout({ children }) {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                <p className="text-xs text-gray-400 capitalize">{user?.conexion_role}</p>
               </div>
             </div>
           </div>
