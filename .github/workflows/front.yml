@@ -8,8 +8,8 @@ on:
 env:
   AWS_REGION: us-east-1
   AWS_ACCOUNT_ID: 344261432125
-  FRONT_BUCKET: evaluaciones-autonoma-frontend
-  CLOUDFRONT_ID: REEMPLAZAR_ID
+  FRONT_BUCKET: evaluaciones-frontend-autonoma
+  CLOUDFRONT_ID: EX8JHMF5TBZ24
   VITE_BACKEND_URL: https://evaluaciones.autonoma.mozartia.com
 
 permissions:
