@@ -40,6 +40,8 @@ function Dashboard() {
   const [savingChanges, setSavingChanges] = useState(false)
   const [downloadingLinkReport, setDownloadingLinkReport] = useState(false)
   const [downloadingAnswersReport, setDownloadingAnswersReport] = useState(false)
+  const [searchStudentDetail, setSearchStudentDetail] = useState('')
+  const [searchBossDetail, setSearchBossDetail] = useState('')
 
   useEffect(() => {
     fetchFilterOptions()
@@ -886,6 +888,8 @@ function Dashboard() {
               onClick={() => {
                 setViewModalOpen(false)
                 setMongoDetails(null)
+                setSearchStudentDetail('')
+                setSearchBossDetail('')
                 // COMENTADO: setIsMonitoringEvaluation eliminado - No se usa monitorias
               }}
             />
@@ -916,6 +920,8 @@ function Dashboard() {
                     onClick={() => {
                       setViewModalOpen(false)
                       setMongoDetails(null)
+                      setSearchStudentDetail('')
+                      setSearchBossDetail('')
                       // COMENTADO: setIsMonitoringEvaluation eliminado - No se usa monitorias
                     }}
                     className="text-gray-400 hover:text-gray-500 flex-shrink-0"
@@ -1041,8 +1047,8 @@ function Dashboard() {
 
                     {/* Correos de Estudiantes */}
                     <div className="border-b pb-3 sm:pb-4">
-                      <div className="flex justify-between items-center mb-2 sm:mb-3">
-                        <div className="flex-1">
+                      <div className="flex justify-between items-center mb-2 sm:mb-3 flex-wrap gap-2">
+                        <div className="flex-1 min-w-0">
                           <h4 className="text-sm sm:text-md font-semibold text-gray-900">
                             Correos de Estudiantes ({mongoDetails.student_emails?.length || 0})
                             {!mongoDetails.is_legacy && (
@@ -1082,7 +1088,28 @@ function Dashboard() {
                           </div>
                         )}
                       </div>
+                      {mongoDetails.student_emails && mongoDetails.student_emails.length > 0 && (
+                        <div className="mb-2">
+                          <input
+                            type="text"
+                            placeholder="Buscar por nombre, correo o ID..."
+                            value={searchStudentDetail}
+                            onChange={(e) => setSearchStudentDetail(e.target.value)}
+                            className="w-full sm:max-w-xs px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-red-500 focus:border-red-500"
+                          />
+                        </div>
+                      )}
                       {mongoDetails.student_emails && mongoDetails.student_emails.length > 0 ? (
+                        (() => {
+                          const term = searchStudentDetail.trim().toLowerCase()
+                          const filteredStudents = term
+                            ? mongoDetails.student_emails.filter(item =>
+                                (item.full_name && item.full_name.toLowerCase().includes(term)) ||
+                                (item.email && item.email.toLowerCase().includes(term)) ||
+                                String(item.legalization_id || '').includes(term)
+                              )
+                            : mongoDetails.student_emails
+                          return (
                         <div className="max-h-48 overflow-x-auto overflow-y-auto">
                           <table className="min-w-full text-xs sm:text-sm">
                             <thead className="bg-gray-50 sticky top-0">
@@ -1099,13 +1126,14 @@ function Dashboard() {
                                   </th>
                                 )}
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">ID</th>
+                                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Nombre</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Correo</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Link</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Estado</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                              {mongoDetails.student_emails.map((item, idx) => (
+                              {filteredStudents.map((item, idx) => (
                                 <tr key={idx} className={!getShouldSendValue(item.legalization_id, 'student', item.should_send) ? 'bg-gray-50 opacity-60' : ''}>
                                   {!mongoDetails.is_legacy && (
                                     <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-center">
@@ -1119,6 +1147,7 @@ function Dashboard() {
                                     </td>
                                   )}
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 whitespace-nowrap">{item.legalization_id}</td>
+                                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900">{item.full_name || '—'}</td>
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 break-all">{item.email}</td>
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2">
                                     {item.link ? (
@@ -1162,6 +1191,8 @@ function Dashboard() {
                             </tbody>
                           </table>
                         </div>
+                          )
+                        })()
                       ) : (
                         <p className="text-gray-500 text-sm">No hay correos de estudiantes registrados</p>
                       )}
@@ -1170,8 +1201,8 @@ function Dashboard() {
                     {/* Correos de Jefes */}
                     {/* COMENTADO: Condición eliminada - Solo se manejan prácticas, no se usa monitorias */}
                     <div className="border-b pb-3 sm:pb-4">
-                        <div className="flex justify-between items-center mb-2 sm:mb-3">
-                          <div className="flex-1">
+                        <div className="flex justify-between items-center mb-2 sm:mb-3 flex-wrap gap-2">
+                          <div className="flex-1 min-w-0">
                             <h4 className="text-sm sm:text-md font-semibold text-gray-900">
                               Correos de Jefes ({mongoDetails.boss_emails?.length || 0})
                               {!mongoDetails.is_legacy && (
@@ -1211,7 +1242,28 @@ function Dashboard() {
                             </div>
                           )}
                         </div>
+                        {mongoDetails.boss_emails && mongoDetails.boss_emails.length > 0 && (
+                          <div className="mb-2">
+                            <input
+                              type="text"
+                              placeholder="Buscar por nombre, correo o ID..."
+                              value={searchBossDetail}
+                              onChange={(e) => setSearchBossDetail(e.target.value)}
+                              className="w-full sm:max-w-xs px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-red-500 focus:border-red-500"
+                            />
+                          </div>
+                        )}
                         {mongoDetails.boss_emails && mongoDetails.boss_emails.length > 0 ? (
+                          (() => {
+                            const term = searchBossDetail.trim().toLowerCase()
+                            const filteredBosses = term
+                              ? mongoDetails.boss_emails.filter(item =>
+                                  (item.full_name && item.full_name.toLowerCase().includes(term)) ||
+                                  (item.email && item.email.toLowerCase().includes(term)) ||
+                                  String(item.legalization_id || '').includes(term)
+                                )
+                              : mongoDetails.boss_emails
+                            return (
                           <div className="max-h-48 overflow-x-auto overflow-y-auto">
                             <table className="min-w-full text-xs sm:text-sm">
                               <thead className="bg-gray-50 sticky top-0">
@@ -1228,13 +1280,14 @@ function Dashboard() {
                                     </th>
                                   )}
                                   <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">ID</th>
+                                  <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Nombre</th>
                                   <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Correo</th>
                                   <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Link</th>
                                   <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Estado</th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
-                                {mongoDetails.boss_emails.map((item, idx) => (
+                                {filteredBosses.map((item, idx) => (
                                   <tr key={idx} className={!getShouldSendValue(item.legalization_id, 'boss', item.should_send) ? 'bg-gray-50 opacity-60' : ''}>
                                     {!mongoDetails.is_legacy && (
                                       <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-center">
@@ -1248,6 +1301,7 @@ function Dashboard() {
                                       </td>
                                     )}
                                     <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 whitespace-nowrap">{item.legalization_id}</td>
+                                    <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900">{item.full_name || '—'}</td>
                                     <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 break-all">{item.email}</td>
                                     <td className="px-2 sm:px-3 py-1.5 sm:py-2">
                                       {item.link ? (
@@ -1291,6 +1345,8 @@ function Dashboard() {
                               </tbody>
                             </table>
                           </div>
+                            )
+                          })()
                         ) : (
                           <p className="text-gray-500 text-xs sm:text-sm">No hay correos de jefes registrados</p>
                         )}
