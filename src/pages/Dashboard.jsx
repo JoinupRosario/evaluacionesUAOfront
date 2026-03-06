@@ -895,7 +895,7 @@ function Dashboard() {
             />
 
             {/* Modal PRÁCTICAS */}
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full max-w-[95vw]">
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl w-full max-w-[95vw]">
               <div className="bg-white px-3 sm:px-4 pt-4 pb-3 sm:pt-5 sm:pb-4 sm:p-6">
                 {/* Banner para evaluaciones del sistema anterior */}
                 {mongoDetails.is_legacy && (
@@ -1106,7 +1106,9 @@ function Dashboard() {
                             ? mongoDetails.student_emails.filter(item =>
                                 (item.full_name && item.full_name.toLowerCase().includes(term)) ||
                                 (item.email && item.email.toLowerCase().includes(term)) ||
-                                String(item.legalization_id || '').includes(term)
+                                String(item.legalization_id || '').includes(term) ||
+                                (item.identification && String(item.identification).includes(term)) ||
+                                (item.program_name && item.program_name.toLowerCase().includes(term))
                               )
                             : mongoDetails.student_emails
                           return (
@@ -1126,7 +1128,9 @@ function Dashboard() {
                                   </th>
                                 )}
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">ID</th>
+                                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Identificación</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Nombre</th>
+                                <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Programa</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Correo</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Link</th>
                                 <th className="px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs font-medium text-gray-700">Estado</th>
@@ -1147,7 +1151,9 @@ function Dashboard() {
                                     </td>
                                   )}
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 whitespace-nowrap">{item.legalization_id}</td>
+                                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 whitespace-nowrap">{item.identification || '—'}</td>
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900">{item.full_name || '—'}</td>
+                                  <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900">{item.program_name || '—'}</td>
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-900 break-all">{item.email}</td>
                                   <td className="px-2 sm:px-3 py-1.5 sm:py-2">
                                     {item.link ? (
