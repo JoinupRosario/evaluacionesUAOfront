@@ -7,6 +7,7 @@ import ResponderEvaluacion from './pages/ResponderEvaluacion'
 import Resultados from './pages/Resultados'
 import Formularios from './pages/Formularios'
 import CrearFormulario from './pages/CrearFormulario'
+import Reportes from './pages/Reportes'
 import Layout from './components/Layout'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
@@ -22,7 +23,7 @@ const PrivateRoute = ({ children }) => {
   return isAuthenticated ? <Layout>{children}</Layout> : <Navigate to="/login" />
 }
 
-const FormulariosRoute = ({ children }) => {
+const AdminGeneralRoute = ({ children }) => {
   const { user, isAuthenticated, loading } = useAuth()
   if (loading) {
     return (
@@ -45,9 +46,10 @@ function AppRoutes() {
       <Route path="/api/auth/azure/callback" element={<AuthCallback />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-      <Route path="/formularios" element={<FormulariosRoute><Formularios /></FormulariosRoute>} />
-      <Route path="/crear-formulario" element={<FormulariosRoute><CrearFormulario /></FormulariosRoute>} />
-      <Route path="/editar-formulario/:id" element={<FormulariosRoute><CrearFormulario /></FormulariosRoute>} />
+      <Route path="/formularios" element={<AdminGeneralRoute><Formularios /></AdminGeneralRoute>} />
+      <Route path="/crear-formulario" element={<AdminGeneralRoute><CrearFormulario /></AdminGeneralRoute>} />
+      <Route path="/editar-formulario/:id" element={<AdminGeneralRoute><CrearFormulario /></AdminGeneralRoute>} />
+      <Route path="/reportes" element={<AdminGeneralRoute><Reportes /></AdminGeneralRoute>} />
       <Route path="/crear-evaluacion" element={<PrivateRoute><CrearEvaluacion /></PrivateRoute>} />
       <Route path="/editar-evaluacion/:id" element={<PrivateRoute><CrearEvaluacion /></PrivateRoute>} />
       <Route path="/responder-evaluacion/:token" element={<ResponderEvaluacion />} />

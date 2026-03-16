@@ -957,7 +957,7 @@ function Dashboard() {
                         </div>
                         <div>
                           <span className="font-medium text-gray-700">Período:</span>
-                          <p className="text-gray-900">{mongoDetails.period}</p>
+                          <p className="text-gray-900">{mongoDetails.period_name || mongoDetails.period || '—'}</p>
                         </div>
                         <div>
                           <span className="font-medium text-gray-700">Estado:</span>
