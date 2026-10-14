@@ -88,12 +88,16 @@ function Reportes() {
         type: 'success'
       })
     } catch (error) {
+      const raw = error.message || error.response?.data?.error || ''
+      const truncated = /Failed to fetch|INCOMPLETE_CHUNKED|network/i.test(raw)
       setAlert({
         isOpen: true,
         title: 'Error',
-        message: 'No se pudo generar el reporte',
+        message: truncated
+          ? 'La descarga se cortó. El reporte de todos los períodos es pesado; el servidor o el proxy cerró la conexión. Pruebe con menos períodos o vuelva a intentar.'
+          : 'No se pudo generar el reporte',
         type: 'error',
-        details: error.message || error.response?.data?.error
+        details: raw || undefined
       })
     } finally {
       setDownloading(false)
