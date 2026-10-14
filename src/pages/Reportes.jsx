@@ -60,12 +60,13 @@ function Reportes() {
     try {
       const token = localStorage.getItem('token')
       const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-      const params = new URLSearchParams()
-      selectedPeriodIds.forEach((id) => params.append('periodIds', id))
-      const url = `${baseURL}/reports/legalizaciones-detallado?${params.toString()}`
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch(`${baseURL}/reports/legalizaciones-detallado`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ periodIds: selectedPeriodIds })
       })
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
