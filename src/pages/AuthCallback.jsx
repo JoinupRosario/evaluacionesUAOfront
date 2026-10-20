@@ -38,9 +38,9 @@ function AuthCallback() {
       try {
         const user = JSON.parse(decodeURIComponent(userParam))
         handleAzureCallback(token, user)
-        // Limpiar la URL antes de redirigir
-        window.history.replaceState({}, '', '/dashboard')
-        navigate('/dashboard', { replace: true })
+        const nextPath = user?.conexion_role === 'Consulta reportes' ? '/reportes' : '/dashboard'
+        window.history.replaceState({}, '', nextPath)
+        navigate(nextPath, { replace: true })
       } catch (error) {
         console.error('Error al procesar callback:', error)
         navigate('/login?error=callback_parse_error', { replace: true })
@@ -59,10 +59,9 @@ function AuthCallback() {
           
           const { token, user } = response.data
           handleAzureCallback(token, user)
-          
-          // Limpiar la URL antes de redirigir para evitar recargas accidentales
-          window.history.replaceState({}, '', '/dashboard')
-          navigate('/dashboard', { replace: true })
+          const nextPath = user?.conexion_role === 'Consulta reportes' ? '/reportes' : '/dashboard'
+          window.history.replaceState({}, '', nextPath)
+          navigate(nextPath, { replace: true })
         } catch (error) {
           console.error('Error al intercambiar código:', error)
           let errorMessage = 'Error al procesar la autenticación'

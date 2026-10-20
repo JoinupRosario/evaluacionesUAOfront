@@ -77,7 +77,8 @@ function Login() {
     const result = await login(email, password)
     
     if (result.success) {
-      navigate('/dashboard')
+      const stored = JSON.parse(localStorage.getItem('user') || '{}')
+      navigate(stored.conexion_role === 'Consulta reportes' ? '/reportes' : '/dashboard')
     } else {
       setError(result.error)
     }
